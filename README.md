@@ -1,5 +1,7 @@
 # IBVAP — Intelligent Border Video Analytics Platform
 
+[![CI](https://github.com/PramodTewatia2007/ibvap-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/PramodTewatia2007/ibvap-platform/actions/workflows/ci.yml)
+
 A software-defined intelligent surveillance platform designed to transform existing IP-based CCTV infrastructure into an AI-enabled monitoring system for Border Outposts (BOPs), checkpoints, border roads, and strategic installations.
 
 ---
