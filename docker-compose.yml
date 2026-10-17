@@ -1,0 +1,28 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ibvap-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - PROJECT_NAME=IBVAP — Intelligent Border Video Analytics Platform
+      - DATABASE_URL=sqlite+aiosqlite:///./ibvap.db
+      - EVIDENCE_DIR=./evidence
+      - SECRET_KEY=ibvap-super-secret-key-production-border-grade-32
+    volumes:
+      - ./evidence:/app/evidence
+      - ./backend/ibvap.db:/app/ibvap.db
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ibvap-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
