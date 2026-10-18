@@ -2,10 +2,11 @@ import asyncio
 import cv2
 import base64
 import time
+import uuid
 from datetime import datetime, timezone
 from sqlalchemy import select
 from app.core.database import AsyncSessionLocal
-from app.models.models import Camera, VirtualZone, DetectionEvent, Alert, EventCategory, IncidentStatus, CameraStatus
+from app.models.models import Camera, VirtualZone, DetectionEvent, Alert, EventCategory, IncidentStatus, CameraStatus, AlertSeverity
 from app.ai.synthetic_stream import SyntheticStreamGenerator
 from app.ai.analytics_engine import analytics_engine
 from app.core.ws_manager import ws_manager
@@ -88,13 +89,25 @@ class StreamWorker:
                                 session.add(det_event)
                                 
                             elif ev["type"] == "ALERT":
-                                alert_code = f"ALT-{int(time.time())}-{cam.id}"
+                                alert_code = f"ALT-{int(time.time())}-{cam.id}-{uuid.uuid4().hex[:6].upper()}"
+                                sev_val = ev["severity"]
+                                if isinstance(sev_val, str):
+                                    sev_enum = AlertSeverity[sev_val] if sev_val in AlertSeverity.__members__ else AlertSeverity.HIGH
+                                else:
+                                    sev_enum = sev_val
+
+                                cat_val = ev["category"]
+                                if isinstance(cat_val, str):
+                                    cat_enum = EventCategory[cat_val] if cat_val in EventCategory.__members__ else EventCategory.ZONE_INTRUSION
+                                else:
+                                    cat_enum = cat_val
+
                                 new_alert = Alert(
                                     alert_code=alert_code,
                                     camera_id=cam.id,
                                     site_id=cam.site_id,
-                                    category=EventCategory[ev["category"]],
-                                    severity=ev["severity"],
+                                    category=cat_enum,
+                                    severity=sev_enum,
                                     title=ev["title"],
                                     description=ev["description"],
                                     triggering_rule=ev["triggering_rule"],
@@ -115,8 +128,8 @@ class StreamWorker:
                                         "camera_id": cam.id,
                                         "site_id": cam.site_id,
                                         "title": new_alert.title,
-                                        "severity": new_alert.severity.value,
-                                        "category": new_alert.category.value,
+                                        "severity": new_alert.severity.value if hasattr(new_alert.severity, "value") else str(new_alert.severity),
+                                        "category": new_alert.category.value if hasattr(new_alert.category, "value") else str(new_alert.category),
                                         "description": new_alert.description,
                                         "evidence_snapshot": new_alert.evidence_snapshot,
                                         "created_at": new_alert.created_at.isoformat()

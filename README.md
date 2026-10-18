@@ -71,6 +71,20 @@ Access the web command interface at `http://localhost`.
 
 ---
 
+## Cloud Deployment on Render
+
+Deploy IBVAP directly to [Render](https://render.com/) with 1-click using the included **Render Blueprint (`render.yaml`)** or unified **`Dockerfile`**:
+
+1. Fork or push this repository to GitHub (`PramodTewatia2007/ibvap-platform`).
+2. Log into the **[Render Dashboard](https://dashboard.render.com/)**.
+3. Click **New +** > **Blueprint**.
+4. Select your repository `PramodTewatia2007/ibvap-platform` and click **Apply**.
+5. Render will build the unified multi-stage container and deploy the app with automatic SSL and zero CORS issues on the Free Tier.
+
+For detailed configurations, manual setup, and environment variables, see **[RENDER_DEPLOYMENT.md](./RENDER_DEPLOYMENT.md)**.
+
+---
+
 ## Default User Accounts (Pre-Seeded)
 
 - **Super Administrator**: `admin` / `Admin@12345` (Full platform configuration)

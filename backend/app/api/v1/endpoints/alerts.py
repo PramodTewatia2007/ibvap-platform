@@ -128,11 +128,16 @@ async def add_incident_note(alert_id: int, payload: IncidentNoteCreate, db: Asyn
     if not a:
         raise HTTPException(status_code=404, detail="Alert not found")
         
-    # Default to system operator note
+    # Resolve active operator
+    user_res = await db.execute(select(User).limit(1))
+    first_user = user_res.scalars().first()
+    user_id = first_user.id if first_user else 1
+    author_name = first_user.full_name if first_user else "Border Control Operator"
+
     note = IncidentNote(
         alert_id=alert_id,
-        user_id=1,
-        author_name="Border Control Operator",
+        user_id=user_id,
+        author_name=author_name,
         note=payload.note
     )
     db.add(note)

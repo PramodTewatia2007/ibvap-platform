@@ -78,35 +78,60 @@ export function App() {
 
 
 
-    // Connect WebSocket for real-time video frames and alerts
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws/surveillance`;
-    let socket: WebSocket;
+    // Resilient auto-reconnecting WebSocket for real-time video frames and alerts
+    let socket: WebSocket | null = null;
+    let reconnectTimeout: any = null;
+    let isUnmounted = false;
 
-    try {
-      socket = new WebSocket(wsUrl);
-      socket.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.event === 'CAMERA_FRAME') {
-            setLiveFrames(prev => ({
-              ...prev,
-              [data.camera_id]: data.frame_data
-            }));
-          } else if (data.event === 'NEW_ALERT') {
-            setAlerts(prev => [data.alert, ...prev]);
+    const connectWs = () => {
+      if (isUnmounted) return;
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const defaultWsUrl = `${protocol}//${window.location.host}/ws/surveillance`;
+      const wsUrl = (import.meta as any).env?.VITE_WS_URL || defaultWsUrl;
+
+      try {
+        socket = new WebSocket(wsUrl);
+
+        socket.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.event === 'CAMERA_FRAME') {
+              setLiveFrames(prev => ({
+                ...prev,
+                [data.camera_id]: data.frame_data
+              }));
+            } else if (data.event === 'NEW_ALERT') {
+              setAlerts(prev => [data.alert, ...prev]);
+            }
+          } catch {
+            // ignore parsing error
           }
-        } catch {
-          // ignore parsing error
-        }
-      };
-    } catch (e) {
-      console.warn("WebSocket could not be established directly:", e);
-    }
+        };
 
+        socket.onclose = () => {
+          if (!isUnmounted) {
+            reconnectTimeout = setTimeout(connectWs, 3000);
+          }
+        };
+
+        socket.onerror = () => {
+          try {
+            socket?.close();
+          } catch {}
+        };
+      } catch {
+        if (!isUnmounted) {
+          reconnectTimeout = setTimeout(connectWs, 3000);
+        }
+      }
+    };
+
+    connectWs();
 
     return () => {
+      isUnmounted = true;
       clearInterval(interval);
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
       if (socket) socket.close();
     };
   }, []);

@@ -4,7 +4,9 @@ import {
   IncidentStatus, AlertSeverity, EventCategory 
 } from './types';
 
-const API_BASE = '/api/v1';
+const API_BASE = (import.meta as any).env?.VITE_API_URL 
+  ? `${(import.meta as any).env.VITE_API_URL.replace(/\/$/, '')}/api/v1` 
+  : '/api/v1';
 
 export const api = {
   // Auth

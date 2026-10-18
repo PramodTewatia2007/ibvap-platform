@@ -3,6 +3,7 @@ from fastapi import APIRouter
 router = APIRouter()
 
 
+@router.get("/health")
 @router.get("/status")
 async def get_system_health():
     return {

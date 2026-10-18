@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: ibvap-platform
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: oregon
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: PROJECT_NAME
+        value: "IBVAP — Intelligent Border Video Analytics Platform"
+      - key: DATABASE_URL
+        value: "sqlite+aiosqlite:///./ibvap.db"
+      - key: EVIDENCE_DIR
+        value: "/app/evidence"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: ENABLE_REALTIME_INFERENCE
+        value: "true"
+      - key: ENABLE_FACIAL_RECOGNITION
+        value: "false"

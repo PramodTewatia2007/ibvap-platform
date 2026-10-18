@@ -1,8 +1,9 @@
 import asyncio
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 import os
 
 from app.core.config import settings
@@ -44,6 +45,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Health check endpoints for cloud load balancers and Render
+@app.get("/health")
+@app.get("/api/health")
+async def health_check():
+    return {
+        "status": "ok",
+        "service": "ibvap-platform",
+        "platform": settings.PROJECT_NAME
+    }
+
 # Mount evidence folder
 os.makedirs(settings.SNAPSHOT_DIR, exist_ok=True)
 os.makedirs(settings.RECORDINGS_DIR, exist_ok=True)
@@ -71,6 +82,45 @@ async def websocket_endpoint(websocket: WebSocket):
         ws_manager.disconnect(websocket)
     except Exception:
         ws_manager.disconnect(websocket)
+
+# Frontend SPA Static Assets & Route Serving
+frontend_dist = settings.FRONTEND_DIST
+if not os.path.exists(frontend_dist):
+    for p in [
+        os.path.join(os.getcwd(), "frontend", "dist"),
+        os.path.join(os.getcwd(), "dist"),
+        "/app/frontend/dist",
+        "/app/dist"
+    ]:
+        if os.path.exists(p):
+            frontend_dist = p
+            break
+
+if os.path.exists(frontend_dist):
+    assets_dir = os.path.join(frontend_dist, "assets")
+    if os.path.exists(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="frontend-assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        if (
+            full_path.startswith("api") or
+            full_path.startswith("ws") or
+            full_path.startswith("evidence") or
+            full_path.startswith("docs") or
+            full_path.startswith("openapi.json")
+        ):
+            raise HTTPException(status_code=404, detail="Not Found")
+            
+        file_path = os.path.join(frontend_dist, full_path)
+        if os.path.isfile(file_path):
+            return FileResponse(file_path)
+            
+        index_html = os.path.join(frontend_dist, "index.html")
+        if os.path.isfile(index_html):
+            return FileResponse(index_html)
+            
+        raise HTTPException(status_code=404, detail="Frontend build index.html not found")
 
 async def seed_initial_data():
     async with AsyncSessionLocal() as session:

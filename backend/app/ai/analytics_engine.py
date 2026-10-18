@@ -6,6 +6,8 @@ from typing import Dict, List, Any
 from datetime import datetime, timezone
 
 
+from app.core.config import settings
+
 class VideoAnalyticsEngine:
     """
     Core AI and Computer Vision engine:
@@ -15,9 +17,9 @@ class VideoAnalyticsEngine:
     - Face detection box extraction
     - Night monitoring rule evaluation
     """
-    def __init__(self, evidence_dir: str = "./evidence"):
-        self.evidence_dir = evidence_dir
-        self.snapshot_dir = os.path.join(evidence_dir, "snapshots")
+    def __init__(self, evidence_dir: str = None):
+        self.evidence_dir = evidence_dir or settings.EVIDENCE_DIR
+        self.snapshot_dir = settings.SNAPSHOT_DIR if not evidence_dir else os.path.join(evidence_dir, "snapshots")
         os.makedirs(self.snapshot_dir, exist_ok=True)
         self.track_history: Dict[int, List[Dict[str, Any]]] = {}
         self.last_alert_time: Dict[str, float] = {} # cooldown tracker

@@ -92,3 +92,11 @@ jobs:
           file: ./frontend/Dockerfile
           push: false
           tags: ibvap-frontend:test
+
+      - name: Build Unified Production Docker Image (Render)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: ibvap-platform:production-test
